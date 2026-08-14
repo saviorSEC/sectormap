@@ -442,6 +442,11 @@
     if (ex.dns && ex.dns.length) addKV("DNS (passive)", esc(ex.dns.join(", ")));
     if (ex.http_status != null) addKV("Endpoint status", `<span class="status ${statusClass(ex.http_status)}">${statusText(ex.http_status)}</span>`);
     if (ex.server) addKV("Server", esc(ex.server));
+    if (ex.auth0_client) addKV("Auth0 Client", esc(ex.auth0_client));
+    if (ex.oauth_audience) addKV("OAuth Audience", esc(ex.oauth_audience));
+    if (ex.auth0_tenant) addKV("Auth0 Tenant", esc(ex.auth0_tenant));
+    if (ex.okta_preview) addKV("Okta Preview", esc(ex.okta_preview));
+    if (ex.redirect_uri) addKV("Redirect URI", esc(ex.redirect_uri));
     if (ex.count != null) addKV("Camera count", fmtN(ex.count));
     if (ex.lat != null && ex.lon != null) addKV("Centroid", `${ex.lat.toFixed(4)}, ${ex.lon.toFixed(4)}`);
     if (ex.endpoints && ex.endpoints.length) addKV("Known endpoints", esc(ex.endpoints.slice(0, 20).join(" · ")));
