@@ -1,1392 +1,528 @@
 <!DOCTYPE html>
-<html class="dark" lang="en">
+<html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>The Celestial Archive - Galaxy View</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <link href="assets/favicon.ico" rel="icon" sizes="any"/>
-<link href="assets/favicon.png" rel="icon" type="image/png"/>
-<link href="assets/css/fonts.css" rel="stylesheet"/>
-<link href="assets/css/galaxy-view.css" rel="stylesheet"/>
+<title>CHURCH OF MALWARE // GALAXY VIEW — FLOCK NETWORK ARCHIVE</title>
 <style>
-        :root {
-            --camera-x: 0px;
-            --camera-y: 0px;
-            --camera-scale: 1;
-        }
-        body {
-            margin: 0;
-            overflow: hidden;
-            background:
-                radial-gradient(circle at 20% 20%, rgba(123, 231, 255, 0.1), transparent 24%),
-                radial-gradient(circle at 80% 15%, rgba(255, 93, 177, 0.12), transparent 18%),
-                radial-gradient(circle at 50% 70%, rgba(255, 213, 106, 0.07), transparent 24%),
-                #020611;
-            color: #e2fbff;
-            font-family: "Space Grotesk", sans-serif;
-        }
-        .ios-safe body {
-            background:
-                radial-gradient(circle at 20% 22%, rgba(123, 231, 255, 0.08), transparent 20%),
-                radial-gradient(circle at 78% 18%, rgba(255, 93, 177, 0.08), transparent 18%),
-                #020611;
-        }
-        .glass-panel {
-            background: rgba(6, 16, 35, 0.72);
-            border: 1px solid rgba(91, 126, 163, 0.5);
-            box-shadow: 0 0 24px rgba(123, 231, 255, 0.08);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-        }
-        .ios-safe .glass-panel,
-        .ios-safe .launcher-button,
-        .ios-safe .telemetry-toggle {
-            backdrop-filter: none;
-            -webkit-backdrop-filter: none;
-            box-shadow: 0 0 12px rgba(123, 231, 255, 0.08);
-        }
-        .starfield-layer,
-        .dust-layer {
-            position: absolute;
-            inset: -20%;
-            pointer-events: none;
-        }
-        .ios-safe .dust-layer,
-        .ios-safe .scanlines {
-            display: none;
-        }
-        .starfield-layer::before,
-        .starfield-layer::after,
-        .dust-layer::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background-repeat: repeat;
-            opacity: 0.55;
-        }
-        .starfield-layer::before {
-            background-image:
-                radial-gradient(circle, rgba(255,255,255,0.9) 0 1px, transparent 1.5px),
-                radial-gradient(circle, rgba(123,231,255,0.8) 0 1px, transparent 1.2px);
-            background-size: 120px 120px, 180px 180px;
-            animation: driftA 120s linear infinite;
-        }
-        .starfield-layer::after {
-            background-image:
-                radial-gradient(circle, rgba(255,213,106,0.6) 0 1px, transparent 1.4px),
-                radial-gradient(circle, rgba(255,93,177,0.5) 0 1px, transparent 1.3px);
-            background-size: 200px 200px, 260px 260px;
-            animation: driftB 180s linear infinite;
-        }
-        .dust-layer::before {
-            background-image:
-                radial-gradient(circle at 25% 30%, rgba(123, 231, 255, 0.18), transparent 14%),
-                radial-gradient(circle at 70% 40%, rgba(255, 93, 177, 0.1), transparent 12%),
-                radial-gradient(circle at 50% 75%, rgba(255, 213, 106, 0.08), transparent 18%);
-            animation: driftC 60s ease-in-out infinite alternate;
-        }
-        @keyframes driftA {
-            from { transform: translate3d(0, 0, 0) scale(1); }
-            to { transform: translate3d(-120px, 80px, 0) scale(1.06); }
-        }
-        @keyframes driftB {
-            from { transform: translate3d(0, 0, 0) scale(1.05); }
-            to { transform: translate3d(140px, -90px, 0) scale(1); }
-        }
-        @keyframes driftC {
-            from { transform: translate3d(-2%, -1%, 0); opacity: 0.7; }
-            to { transform: translate3d(2%, 1%, 0); opacity: 1; }
-        }
-        .scanlines {
-            position: fixed;
-            inset: 0;
-            background: linear-gradient(to bottom, transparent 0, transparent 50%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0.03) 100%);
-            background-size: 100% 4px;
-            pointer-events: none;
-            mix-blend-mode: soft-light;
-            opacity: 0.4;
-            z-index: 60;
-        }
-        .galaxy-stage {
-            position: absolute;
-            inset: 0;
-            transform: translate3d(var(--camera-x), var(--camera-y), 0) scale(var(--camera-scale));
-            transition: transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
-            transform-origin: center center;
-            cursor: grab;
-            touch-action: none;
-        }
-        .ios-safe .galaxy-stage {
-            transition: transform 420ms ease;
-        }
-        .galaxy-stage.dragging {
-            cursor: grabbing;
-        }
-        .cluster-shell,
-        .record-node {
-            position: absolute;
-            transform: translate(-50%, -50%);
-        }
-        .cluster-shell {
-            width: calc(var(--size, 120) * 1px);
-            height: calc(var(--size, 120) * 1px);
-            border-radius: 9999px;
-            cursor: pointer;
-            z-index: 3;
-            transition: transform 280ms ease, filter 280ms ease, opacity 280ms ease;
-        }
-        .cluster-shell:hover {
-            transform: translate(-50%, -50%) scale(1.06);
-            filter: brightness(1.08);
-        }
-        .cluster-shell::before,
-        .cluster-shell::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-        }
-        .cluster-shell::before {
-            background:
-                radial-gradient(circle at 35% 30%, rgba(255,255,255,0.92), transparent 20%),
-                radial-gradient(circle at 50% 50%, var(--body-core, rgba(123,231,255,0.9)), rgba(6,16,35,0.08) 60%, transparent 72%);
-            box-shadow: 0 0 40px var(--body-glow, rgba(123,231,255,0.35));
-            animation: bodyPulse 6s ease-in-out infinite;
-        }
-        .ios-safe .cluster-shell::before {
-            box-shadow: 0 0 18px var(--body-glow, rgba(123,231,255,0.2));
-            animation: none;
-        }
-        .cluster-shell::after {
-            inset: -18%;
-            border: 1px solid rgba(123, 231, 255, 0.18);
-            opacity: 0.7;
-            animation: haloSpin 18s linear infinite;
-        }
-        .ios-safe .cluster-shell::after {
-            display: none;
-        }
-        .cluster-shell[data-kind="sun"]::after {
-            inset: -28%;
-            border-color: rgba(255, 213, 106, 0.25);
-        }
-        .cluster-shell[data-active="true"] {
-            filter: brightness(1.18);
-        }
-        .cluster-label {
-            position: absolute;
-            left: 50%;
-            top: calc(100% + 10px);
-            transform: translateX(-50%);
-            white-space: nowrap;
-            text-align: center;
-            font-family: "Rajdhani", sans-serif;
-            letter-spacing: 0.16em;
-            text-transform: uppercase;
-            color: rgba(226, 251, 255, 0.9);
-            text-shadow: 0 0 16px rgba(123, 231, 255, 0.3);
-        }
-        .record-node {
-            width: 8px;
-            height: 8px;
-            border-radius: 9999px;
-            background: rgba(226, 251, 255, 0.92);
-            box-shadow: 0 0 14px rgba(123, 231, 255, 0.45);
-            cursor: pointer;
-            z-index: 2;
-            transition: transform 180ms ease, box-shadow 180ms ease;
-        }
-        .record-node:hover {
-            transform: translate(-50%, -50%) scale(1.7);
-            box-shadow: 0 0 20px rgba(123, 231, 255, 0.72);
-        }
-        .record-node[data-selected="true"] {
-            background: #ffd56a;
-            box-shadow: 0 0 22px rgba(255, 213, 106, 0.7);
-        }
-        .record-node::after {
-            content: "";
-            position: absolute;
-            inset: -7px;
-            border-radius: 9999px;
-            border: 1px solid rgba(123, 231, 255, 0.14);
-            animation: orbitBreath 4s ease-in-out infinite;
-        }
-        .ios-safe .record-node::after {
-            animation: none;
-            opacity: 0.12;
-        }
-        .mode-button[data-active="true"] {
-            border-color: rgba(123, 231, 255, 0.66);
-            color: #7be7ff;
-            box-shadow: 0 0 18px rgba(123, 231, 255, 0.18);
-        }
-        .telemetry-shell {
-            position: relative;
-        }
-        .launcher-button,
-        .telemetry-toggle {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 3rem;
-            height: 3rem;
-            border-radius: 9999px;
-            border: 1px solid rgba(91, 126, 163, 0.5);
-            background: rgba(6, 16, 35, 0.78);
-            color: #7be7ff;
-            box-shadow: 0 0 24px rgba(123, 231, 255, 0.08);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
-        }
-        .launcher-button:hover,
-        .launcher-button:focus-visible,
-        .telemetry-toggle:hover,
-        .telemetry-toggle:focus-visible,
-        .telemetry-shell.telemetry-panel-open .telemetry-toggle {
-            transform: scale(1.04);
-            border-color: rgba(123, 231, 255, 0.68);
-            box-shadow: 0 0 24px rgba(123, 231, 255, 0.18);
-        }
-        .launcher-shell {
-            position: relative;
-            pointer-events: none;
-        }
-        .launcher-shell > .launcher-button,
-        .launcher-shell[data-open="true"] > .launcher-panel {
-            pointer-events: auto;
-        }
-        .launcher-shell[data-open="false"] > .launcher-panel {
-            pointer-events: none !important;
-        }
-        .launcher-panel {
-            opacity: 0;
-            pointer-events: none;
-            transform: translateY(10px) scale(0.98);
-            transition: opacity 180ms ease, transform 180ms ease;
-        }
-        .launcher-shell[data-open="true"] .launcher-panel {
-            opacity: 1;
-            pointer-events: auto;
-            transform: translateY(0) scale(1);
-        }
-        .telemetry-panel {
-            position: absolute;
-            top: calc(100% + 0.75rem);
-            left: 0;
-            width: min(22rem, calc(100vw - 2rem));
-            opacity: 0;
-            pointer-events: none;
-            transform: translateY(-8px) scale(0.98);
-            transition: opacity 180ms ease, transform 180ms ease;
-        }
-        .telemetry-shell[data-open="true"] .telemetry-panel,
-        .telemetry-shell:hover .telemetry-panel,
-        .telemetry-shell:focus-within .telemetry-panel {
-            opacity: 1;
-            pointer-events: auto;
-            transform: translateY(0) scale(1);
-        }
-        .control-dock {
-            display: flex;
-            align-items: flex-end;
-            gap: 0.75rem;
-        }
-        .zoom-dock {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            align-items: flex-end;
-        }
-        .zoom-button {
-            font-family: "Space Mono", monospace;
-            font-size: 1rem;
-            font-weight: 700;
-            line-height: 1;
-        }
-        .system-launcher-shell {
-            position: absolute;
-            right: 1rem;
-            top: 6rem;
-            z-index: 40;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 0.75rem;
-            pointer-events: none;
-        }
-        .system-launcher-shell .launcher-panel {
-            width: min(30rem, calc(100vw - 2rem));
-            max-width: min(30rem, calc(100vw - 2rem));
-        }
-        .mode-panel {
-            padding: 0.5rem;
-            max-width: min(42rem, calc(100vw - 2rem));
-        }
-        .search-overlay {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            justify-content: flex-end;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 240ms ease;
-            z-index: 55;
-        }
-        .search-overlay.open {
-            opacity: 1;
-            pointer-events: auto;
-        }
-        .search-overlay-backdrop {
-            position: absolute;
-            inset: 0;
-            background: rgba(2, 6, 17, 0.44);
-        }
-        .search-panel {
-            position: relative;
-            width: min(760px, 58vw);
-            height: 100%;
-            padding: 2rem;
-            overflow: auto;
-        }
-        .result-card {
-            transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
-        }
-        .result-card:hover {
-            transform: translateX(-5px);
-        }
-        .orbit-ring {
-            position: absolute;
-            border-radius: 9999px;
-            border: 1px solid rgba(123, 231, 255, 0.08);
-            pointer-events: none !important;
-            transform: translate(-50%, -50%);
-            z-index: 1;
-        }
-        @keyframes bodyPulse {
-            0%, 100% { transform: scale(1); filter: saturate(1); }
-            50% { transform: scale(1.04); filter: saturate(1.15); }
-        }
-        @keyframes haloSpin {
-            from { transform: rotate(0deg) scale(1); }
-            to { transform: rotate(360deg) scale(1.04); }
-        }
-        @keyframes orbitBreath {
-            0%, 100% { transform: scale(1); opacity: 0.5; }
-            50% { transform: scale(1.4); opacity: 0.1; }
-        }
-        @media (max-width: 1024px) {
-            .system-launcher-shell {
-                right: 0.75rem;
-                top: 5rem;
-            }
-            .system-launcher-shell .launcher-panel {
-                width: calc(100vw - 1.5rem);
-                max-width: calc(100vw - 1.5rem);
-                max-height: 42vh;
-                overflow: auto;
-            }
-            .search-panel {
-                width: min(100vw, 100%);
-                padding: 1.25rem;
-            }
-        }
-        @media (max-width: 768px) {
-            .cluster-label {
-                display: none;
-            }
-            .cluster-shell[data-active="true"] .cluster-label {
-                display: block;
-                font-size: 0.95rem;
-            }
-            .control-dock {
-                width: calc(100vw - 1.5rem);
-                flex-direction: column;
-                align-items: stretch;
-            }
-            #bottom-left-controls {
-                width: 100%;
-            }
-            #mode-switcher {
-                justify-content: flex-start;
-                max-width: none;
-            }
-            #discover-launcher {
-                align-self: flex-end;
-            }
-            .telemetry-panel {
-                width: min(20rem, calc(100vw - 1.5rem));
-            }
-            .system-launcher-shell {
-                right: 0.75rem;
-                left: 0.75rem;
-                align-items: flex-end;
-            }
-            .system-launcher-shell .launcher-panel {
-                width: calc(100vw - 1.5rem);
-            }
-            .search-overlay {
-                justify-content: stretch;
-            }
-            .search-panel {
-                width: 100vw;
-                min-height: 100%;
-                padding: 1rem;
-                overflow-y: auto;
-            }
-            .search-panel .mobile-search-stack {
-                gap: 0.75rem;
-            }
-            .search-panel .mobile-search-input {
-                padding-top: 0.95rem;
-                padding-bottom: 0.95rem;
-                padding-left: 2.9rem;
-                padding-right: 1rem;
-                font-size: 1.7rem;
-                line-height: 1;
-            }
-            .search-panel .mobile-search-icon {
-                font-size: 1.65rem;
-                left: 0.75rem;
-            }
-            .search-panel .mobile-results-meta {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.35rem;
-            }
-            .search-panel .mobile-filter-grid {
-                grid-template-columns: 1fr;
-                gap: 0.75rem;
-            }
-            .search-panel .mobile-search-heading {
-                font-size: 1.55rem;
-                line-height: 1;
-            }
-            .search-panel .mobile-search-topline {
-                font-size: 0.7rem;
-                letter-spacing: 0.45em;
-            }
-            .search-panel .mobile-search-close {
-                padding: 0.65rem 0.85rem;
-                font-size: 0.7rem;
-            }
-        }
-    </style>
+  :root {
+    --bg: #04060c;
+    --panel: rgba(8, 14, 24, 0.88);
+    --line: rgba(0, 255, 170, 0.18);
+    --accent: #00ffaa;
+    --accent2: #00d0ff;
+    --warn: #ffb020;
+    --bad: #ff4d6d;
+    --ok: #2bff88;
+    --text: #c8d6e0;
+    --dim: #5b6b78;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; background: var(--bg); color: var(--text);
+    font-family: "JetBrains Mono", "Fira Code", ui-monospace, Menlo, Consolas, monospace;
+    overflow: hidden; }
+  #bg { position: fixed; inset: 0; z-index: 0; }
+  .hud { position: fixed; top: 14px; left: 16px; z-index: 20; pointer-events: none; }
+  .hud .brand { font-size: 13px; font-weight: 700; letter-spacing: 3px; color: #eaf4ee; }
+  .hud .brand span { color: var(--accent); }
+  .hud .sub { font-size: 9px; letter-spacing: 3px; color: var(--dim); margin-top: 3px; text-transform: uppercase; }
+  .hud .badge { display: inline-block; margin-top: 8px; padding: 2px 8px; font-size: 9px;
+    letter-spacing: 2px; border: 1px solid var(--warn); color: var(--warn); border-radius: 2px; }
+  .stats { position: fixed; top: 14px; right: 16px; z-index: 20; text-align: right; pointer-events: none; }
+  .stats .num { font-size: 22px; font-weight: 700; color: var(--accent); line-height: 1; }
+  .stats .lbl { font-size: 8px; letter-spacing: 2px; color: var(--dim); text-transform: uppercase; }
+  .stats .row { display: flex; gap: 18px; justify-content: flex-end; margin-top: 6px; }
+  .stats .row div { text-align: right; }
+  .topbar { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 30;
+    display: flex; gap: 6px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 6px; padding: 4px; }
+  .topbar .mode { color: var(--dim); background: transparent; border: none; font-size: 9px;
+    letter-spacing: 2px; text-transform: uppercase; padding: 6px 12px; border-radius: 4px; cursor: pointer;
+    font-family: inherit; }
+  .topbar .mode.active { color: var(--accent); background: rgba(0,255,170,0.08); border: 1px solid var(--line); }
+  .topbar .mode:hover { color: var(--text); }
+  #stage { position: fixed; inset: 0; z-index: 1; }
+  .cluster { position: absolute; z-index: 2; transform: translate(-50%, -50%);
+    cursor: pointer; text-align: center; border-radius: 50%; }
+  .cluster .orb { width: 100%; height: 100%; border-radius: 50%; position: relative;
+    box-shadow: 0 0 40px 6px var(--glow), inset 0 0 30px rgba(255,255,255,0.08); }
+  .cluster .orb::after { content: ""; position: absolute; inset: 18%; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.35), transparent 60%); }
+  .cluster .label { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+    font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--text);
+    white-space: nowrap; text-shadow: 0 0 8px #000; pointer-events: none; }
+  .cluster .label b { color: var(--accent); font-weight: 700; }
+  .cluster:hover .orb { box-shadow: 0 0 60px 12px var(--glow), inset 0 0 30px rgba(255,255,255,0.15); }
+  .record { position: absolute; z-index: 3; transform: translate(-50%, -50%);
+    width: 6px; height: 6px; border-radius: 50%; cursor: pointer;
+    background: radial-gradient(circle, #fff 0%, var(--rc) 45%, transparent 75%);
+    box-shadow: 0 0 8px 1px var(--rc); transition: transform 0.15s; }
+  .record:hover { transform: translate(-50%, -50%) scale(2.4); z-index: 5; }
+  .record.sel { transform: translate(-50%, -50%) scale(2.6); box-shadow: 0 0 14px 3px #fff, 0 0 20px 6px var(--rc); z-index: 6; }
+  .tooltip { position: fixed; z-index: 40; background: rgba(4, 8, 14, 0.96); border: 1px solid var(--line);
+    padding: 8px 12px; font-size: 10px; letter-spacing: 1px; color: var(--text);
+    max-width: 320px; pointer-events: none; border-radius: 4px; display: none;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.7); }
+  .tooltip b { color: var(--accent); }
+  #searchWrap { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 30;
+    width: min(640px, calc(100vw - 32px)); }
+  #search { width: 100%; background: var(--panel); border: 1px solid var(--line); color: var(--text);
+    padding: 12px 16px; font-size: 12px; letter-spacing: 1px; border-radius: 6px; font-family: inherit;
+    outline: none; }
+  #search:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0,255,170,0.15); }
+  #results { position: absolute; bottom: calc(100% + 8px); left: 0; right: 0; max-height: 300px; overflow-y: auto;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 6px; display: none; }
+  #results .r { padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; }
+  #results .r:hover { background: rgba(0,255,170,0.07); }
+  #results .r .t { font-size: 11px; color: #fff; letter-spacing: 0.5px; }
+  #results .r .m { font-size: 9px; color: var(--dim); margin-top: 3px; }
+  #results .r .tag { float: right; font-size: 8px; letter-spacing: 1px; color: var(--accent); border: 1px solid var(--line); padding: 1px 6px; border-radius: 2px; }
+  #drawer { position: fixed; top: 0; right: -460px; width: min(440px, 92vw); height: 100%; z-index: 50;
+    background: var(--panel); border-left: 1px solid var(--line); transition: right 0.25s ease;
+    overflow-y: auto; padding: 20px; backdrop-filter: blur(8px); }
+  #drawer.open { right: 0; }
+  #drawer .close { position: absolute; top: 12px; right: 14px; background: none; border: 1px solid var(--line);
+    color: var(--dim); font-size: 11px; padding: 4px 9px; cursor: pointer; border-radius: 3px; font-family: inherit; }
+  #drawer .close:hover { color: var(--bad); border-color: var(--bad); }
+  #drawer h2 { font-size: 15px; color: #fff; letter-spacing: 1px; padding-right: 40px; line-height: 1.35; }
+  #drawer .type { font-size: 9px; letter-spacing: 2px; color: var(--accent); text-transform: uppercase; margin-top: 6px; }
+  #drawer .src { font-size: 9px; letter-spacing: 2px; color: var(--dim); margin-top: 3px; }
+  #drawer .desc { font-size: 11px; color: var(--text); line-height: 1.6; margin-top: 12px; }
+  #drawer .kv { margin-top: 14px; }
+  #drawer .kv .k { font-size: 8px; letter-spacing: 2px; color: var(--dim); text-transform: uppercase; margin-bottom: 3px; }
+  #drawer .kv .v { font-size: 11px; color: var(--text); margin-bottom: 10px; word-break: break-all; }
+  #drawer .kv .v.zone { color: var(--zonecolor); font-weight: 700; }
+  .status { display: inline-block; padding: 2px 8px; font-size: 9px; letter-spacing: 1px; border-radius: 2px; }
+  .status.ok { background: rgba(43,255,136,0.12); color: var(--ok); border: 1px solid rgba(43,255,136,0.4); }
+  .status.warn { background: rgba(255,176,32,0.12); color: var(--warn); border: 1px solid rgba(255,176,32,0.4); }
+  .status.bad { background: rgba(255,77,109,0.12); color: var(--bad); border: 1px solid rgba(255,77,109,0.4); }
+  #drawer .actions { margin-top: 18px; display: flex; gap: 8px; flex-wrap: wrap; }
+  #drawer .actions a, #drawer .actions button { flex: 1; min-width: 130px; text-align: center; text-decoration: none;
+    padding: 11px 10px; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; border-radius: 4px;
+    border: 1px solid var(--line); background: rgba(0,255,170,0.06); color: var(--accent); cursor: pointer;
+    font-family: inherit; }
+  #drawer .actions a:hover, #drawer .actions button:hover { background: rgba(0,255,170,0.16); }
+  #drawer .actions .ghost { background: transparent; color: var(--dim); }
+  #drawer .actions .ghost:hover { color: var(--text); border-color: var(--dim); }
+  #drawer .actions a.disabled { opacity: 0.35; pointer-events: none; }
+  .recordList { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
+  .recordList .rl { padding: 9px 10px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 6px;
+    cursor: pointer; border-radius: 3px; font-size: 10px; }
+  .recordList .rl:hover { border-color: var(--accent); }
+  .recordList .rl .c { color: var(--accent); }
+  .hint { position: fixed; bottom: 92px; left: 50%; transform: translateX(-50%); z-index: 10;
+    font-size: 9px; letter-spacing: 2px; color: var(--dim); text-transform: uppercase; pointer-events: none;
+    background: rgba(4,6,12,0.7); padding: 4px 10px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.05); }
+  .legend { position: fixed; bottom: 22px; left: 16px; z-index: 20; font-size: 9px; letter-spacing: 1px;
+    color: var(--dim); pointer-events: none; max-width: 240px; }
+  .legend .li { display: flex; align-items: center; gap: 7px; margin-top: 4px; }
+  .legend .sw { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .credit { position: fixed; bottom: 22px; right: 16px; z-index: 20; font-size: 8px; letter-spacing: 2px;
+    color: rgba(91,107,120,0.6); text-transform: uppercase; pointer-events: none; }
+  @media (max-width: 768px) {
+    .topbar { top: 60px; }
+    .stats { display: none; }
+    .hint { display: none; }
+    .legend { display: none; }
+    #drawer { padding: 14px; }
+  }
+</style>
 </head>
-<body class="relative h-screen w-full overflow-hidden selection:bg-primary selection:text-background">
-<div class="starfield-layer"></div>
-<div class="dust-layer"></div>
-<div class="scanlines"></div>
-
-<div class="relative z-40 h-full w-full p-4 pointer-events-none">
-<div class="telemetry-shell pointer-events-auto absolute left-4 top-4 z-[70]" data-open="false" id="telemetry-shell">
-<button aria-controls="telemetry-panel" aria-expanded="false" class="telemetry-toggle" id="telemetry-toggle" type="button">
-<span class="material-symbols-outlined">orbit</span>
-</button>
-<div class="telemetry-panel glass-panel" id="telemetry-panel">
-<div class="border-b border-slate-500/40 bg-primary/10 px-4 py-3 flex items-center justify-between">
-<div>
-<p class="font-heading text-xs uppercase tracking-[0.35em] text-primary">Celestial Telemetry</p>
-<h1 class="font-heading text-2xl">Galaxy View</h1>
+<body>
+<canvas id="bg"></canvas>
+<div class="hud">
+  <div class="brand">CHURCH OF <span>MALWARE</span></div>
+  <div class="sub">FLOCK NETWORK ARCHIVE // GALAXY VIEW</div>
+  <div class="badge">SECTORMAP OSINT</div>
 </div>
-<span class="material-symbols-outlined text-primary">radar</span>
+<div class="stats" id="stats">
+  <div class="num" id="statTotal">0</div>
+  <div class="lbl">records</div>
+  <div class="row">
+    <div><div class="num" id="statTypes" style="font-size:15px">0</div><div class="lbl">types</div></div>
+    <div><div class="num" id="statZones" style="font-size:15px">0</div><div class="lbl">zones</div></div>
+    <div><div class="num" id="statLive" style="font-size:15px">0</div><div class="lbl">live hosts</div></div>
+  </div>
 </div>
-<div class="p-4 grid grid-cols-2 gap-3 text-xs font-mono">
-<div><span class="block text-muted mb-1">Relationship</span><span class="text-primary" id="telemetry-mode">type</span></div>
-<div><span class="block text-muted mb-1">Systems</span><span id="telemetry-clusters">0</span></div>
-<div><span class="block text-muted mb-1">Records</span><span id="telemetry-records">0</span></div>
-<div><span class="block text-muted mb-1">Focus</span><span id="telemetry-focus">Awaiting lock</span></div>
+<div class="topbar" id="modes"></div>
+<div id="stage"></div>
+<div class="tooltip" id="tooltip"></div>
+<div class="hint">click a body to focus · click a star for endpoint intel · search below</div>
+<div class="legend" id="legend"></div>
+<div class="credit">BASE ENGINE // JON "GAINSEC" GAINES · ENRICHED BY CHURCH OF MALWARE</div>
+<div id="searchWrap">
+  <div id="results"></div>
+  <input id="search" type="text" placeholder="SEARCH ARCHIVE — hostname, city, zone, role, tag…" autocomplete="off" />
 </div>
-<div class="px-4 pb-3 pt-2 border-t border-primary/10 text-right">
-<a class="text-[10px] uppercase tracking-[0.22em] text-text-main/45 hover:text-primary" href="https://gainsec.com/" rel="noreferrer" target="_blank">Made by Jon 'GainSec' Gaines</a>
+<div id="drawer">
+  <button class="close" id="drawerClose">ESC / CLOSE</button>
+  <h2 id="dTitle"></h2>
+  <div class="type" id="dType"></div>
+  <div class="src" id="dSrc"></div>
+  <p class="desc" id="dDesc"></p>
+  <div class="kv" id="dKv"></div>
+  <div class="actions" id="dActions"></div>
+  <div class="recordList" id="dList"></div>
 </div>
-</div>
-</div>
-
-<div class="absolute left-4 bottom-4 right-4 flex justify-between items-end gap-3">
-<div class="control-dock pointer-events-auto" id="bottom-left-controls">
-<div class="launcher-shell" data-open="false" id="mode-shell">
-<button aria-controls="mode-panel" aria-expanded="false" class="launcher-button" id="mode-launcher" type="button">
-<span class="material-symbols-outlined">account_tree</span>
-</button>
-<div class="launcher-panel glass-panel mode-panel absolute bottom-[calc(100%+0.75rem)] left-0" id="mode-panel">
-<div class="flex gap-2 flex-wrap justify-start" id="mode-switcher"></div>
-</div>
-</div>
-</div>
-<div class="pointer-events-auto flex flex-col items-end gap-3">
-<div class="zoom-dock">
-<button aria-label="Zoom in" class="launcher-button zoom-button" id="zoom-in-button" type="button">+</button>
-<button aria-label="Zoom out" class="launcher-button zoom-button" id="zoom-out-button" type="button">−</button>
-</div>
-<button aria-label="Open discover search" class="launcher-button" id="discover-launcher" type="button">
-<span class="material-symbols-outlined">travel_explore</span>
-</button>
-</div>
-</div>
-</div>
-
-<div class="absolute inset-0 overflow-hidden">
-<div class="galaxy-stage" id="galaxy-stage"></div>
-</div>
-
-<div class="launcher-shell system-launcher-shell" data-open="false" id="system-shell">
-<button aria-controls="system-panel" aria-expanded="false" class="launcher-button" id="system-launcher" type="button">
-<span class="material-symbols-outlined">planet</span>
-</button>
-<div class="launcher-panel system-panel glass-panel p-0" id="system-panel">
-<div class="border-b border-slate-500/40 bg-primary/10 px-4 py-3 flex items-center justify-between">
-<div>
-<p class="font-heading text-xs uppercase tracking-[0.3em] text-primary">Focused System</p>
-<h2 class="font-heading text-3xl text-white" id="system-title">Awaiting focus</h2>
-</div>
-<span class="font-mono text-[10px] uppercase tracking-[0.22em] text-primary" id="system-count">0 records</span>
-</div>
-<div class="p-4 space-y-4">
-<p class="text-sm text-slate-200/80 leading-relaxed" id="system-description">Major bodies represent relationship clusters. Stars around them are live records from the archive.</p>
-<div class="grid grid-cols-3 gap-3 text-[10px] font-mono uppercase tracking-[0.22em]">
-<div class="glass-panel p-3"><span class="block text-muted mb-1">Mode</span><span class="text-primary" id="system-mode">type</span></div>
-<div class="glass-panel p-3"><span class="block text-muted mb-1">Selected</span><span class="text-white" id="system-selected">None</span></div>
-<div class="glass-panel p-3"><span class="block text-muted mb-1">Orbit</span><span class="text-white" id="system-orbit">Stable</span></div>
-</div>
-<div class="hidden space-y-3" id="record-details">
-<div class="flex gap-2">
-<a class="inline-flex items-center justify-center border border-primary/40 px-3 py-2 text-xs uppercase tracking-[0.22em] text-primary hover:bg-primary/10" href="#" id="open-link-button" rel="noreferrer" target="_blank">Open Link</a>
-<button class="border border-slate-500/40 px-3 py-2 text-xs uppercase tracking-[0.22em] text-slate-200/75 hover:bg-white/5" id="clear-selection-button" type="button">Clear Selection</button>
-</div>
-<div class="space-y-2 text-sm" id="record-meta"></div>
-</div>
-<div>
-<p class="font-heading text-xs uppercase tracking-[0.25em] text-primary/70 mb-2">Nearby Records</p>
-<div class="space-y-2 max-h-[18rem] overflow-auto pr-1" id="system-records"></div>
-</div>
-</div>
-</div>
-</div>
-
-<div aria-hidden="true" class="search-overlay" id="search-overlay">
-<div class="search-overlay-backdrop" id="search-backdrop"></div>
-<div class="search-panel glass-panel">
-<div class="flex items-center justify-between border-b border-slate-500/30 pb-4">
-<div class="flex items-center gap-3">
-<span class="material-symbols-outlined text-primary">radar</span>
-<div>
-<p class="font-heading text-xs uppercase tracking-[0.35em] text-primary/70 mobile-search-topline">HUD Search v3</p>
-<p class="font-heading text-2xl mobile-search-heading">Archive Query Interface</p>
-</div>
-</div>
-<button class="border border-slate-500/40 px-3 py-2 text-[10px] uppercase tracking-[0.25em] text-primary mobile-search-close" id="close-search" type="button">Close</button>
-</div>
-<div class="mt-5 sm:mt-6 space-y-4 mobile-search-stack">
-<div class="relative">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary text-3xl opacity-60 mobile-search-icon">search</span>
-<input autofocus class="w-full border-b-2 border-slate-500/50 bg-black/20 py-5 pl-16 pr-6 text-4xl font-heading text-primary outline-none focus:border-primary mobile-search-input" id="search-input" placeholder="ENTER QUERY..." type="text"/>
-</div>
-<div class="grid grid-cols-2 gap-3 mobile-filter-grid">
-<label class="text-xs uppercase tracking-[0.22em] text-muted">
-<span class="mb-2 block">Field</span>
-<select class="w-full border border-slate-500/40 bg-black/20 px-3 py-2 text-sm text-white outline-none focus:border-primary" id="search-field-filter">
-<option value="all">All contents</option>
-<option value="title">Title</option>
-<option value="description">Description</option>
-<option value="tags">Tags</option>
-<option value="type">Type</option>
-<option value="source">Source</option>
-<option value="url">URL</option>
-</select>
-</label>
-<label class="text-xs uppercase tracking-[0.22em] text-muted">
-<span class="mb-2 block">Relationship View</span>
-<select class="w-full border border-slate-500/40 bg-black/20 px-3 py-2 text-sm text-white outline-none focus:border-primary" id="search-mode-filter"></select>
-</label>
-</div>
-</div>
-<div class="mt-4 flex justify-between items-center text-xs uppercase tracking-[0.22em] text-muted mobile-results-meta">
-<span>Default search spans title, description, tags, type, source, URL</span>
-<span id="search-latency">ready</span>
-</div>
-<div class="mt-8 space-y-4">
-<h3 class="font-heading text-xs uppercase tracking-[0.3em] text-primary/50" id="results-count">0 entities located</h3>
-<div class="space-y-3" id="search-results"></div>
-</div>
-</div>
-</div>
-
 <script src="sectormap-data.js"></script>
-<script src="sectormap-shim.js"></script>
 <script>
-        const galaxyStage = document.getElementById("galaxy-stage");
-        const searchOverlay = document.getElementById("search-overlay");
-        const closeSearch = document.getElementById("close-search");
-        const searchBackdrop = document.getElementById("search-backdrop");
-        const searchInput = document.getElementById("search-input");
-        const searchFieldFilter = document.getElementById("search-field-filter");
-        const searchModeFilter = document.getElementById("search-mode-filter");
-        const searchResults = document.getElementById("search-results");
-        const searchLatency = document.getElementById("search-latency");
-        const resultsCount = document.getElementById("results-count");
-        const modeSwitcher = document.getElementById("mode-switcher");
-        const telemetryShell = document.getElementById("telemetry-shell");
-        const telemetryToggle = document.getElementById("telemetry-toggle");
-        const telemetryPanel = document.getElementById("telemetry-panel");
-        const modeShell = document.getElementById("mode-shell");
-        const modeLauncher = document.getElementById("mode-launcher");
-        const systemShell = document.getElementById("system-shell");
-        const systemLauncher = document.getElementById("system-launcher");
-        const discoverLauncher = document.getElementById("discover-launcher");
-        const zoomInButton = document.getElementById("zoom-in-button");
-        const zoomOutButton = document.getElementById("zoom-out-button");
-        const systemTitle = document.getElementById("system-title");
-        const systemCount = document.getElementById("system-count");
-        const systemDescription = document.getElementById("system-description");
-        const systemMode = document.getElementById("system-mode");
-        const systemSelected = document.getElementById("system-selected");
-        const systemOrbit = document.getElementById("system-orbit");
-        const systemRecords = document.getElementById("system-records");
-        const recordDetails = document.getElementById("record-details");
-        const recordMeta = document.getElementById("record-meta");
-        const openLinkButton = document.getElementById("open-link-button");
-        const clearSelectionButton = document.getElementById("clear-selection-button");
-        const telemetryMode = document.getElementById("telemetry-mode");
-        const telemetryClusters = document.getElementById("telemetry-clusters");
-        const telemetryRecords = document.getElementById("telemetry-records");
-        const telemetryFocus = document.getElementById("telemetry-focus");
-        const IOS_SAFE_MODE = /iPhone|iPad|iPod/i.test(navigator.userAgent)
-            || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-        document.documentElement.classList.toggle("ios-safe", IOS_SAFE_MODE);
+(() => {
+  const ARCH = window.SECTORMAP_ARCHIVE;
+  if (!ARCH) return;
+  const RECORDS = ARCH.records;
+  const byId = new Map(RECORDS.map(r => [r.id, r]));
+  const TYPE_COLORS = {
+    "subdomain": "#00d0ff", "infrastructure": "#a78bfa", "zone": "#e879f9",
+    "camera-network": "#ffd166", "camera-city": "#2bff88",
+  };
+  const ZONE_COLORS = {
+    "z-edge": "#00ffaa", "z-aws": "#ffb020", "z-web": "#ffd166", "z-dev": "#a78bfa",
+    "z-gov": "#ff6b6b", "z-ops": "#ff9f1c", "z-saas": "#00d0ff", "z-k8s": "#f472b6",
+    "z-int": "#94a3b8", "z-data": "#60a5fa", "z-mon": "#e879f9", "public-map": "#2bff88",
+  };
+  const stage = document.getElementById("stage");
+  const tooltip = document.getElementById("tooltip");
+  const modesEl = document.getElementById("modes");
+  const legendEl = document.getElementById("legend");
+  const drawer = document.getElementById("drawer");
+  const searchInput = document.getElementById("search");
+  const resultsEl = document.getElementById("results");
+  let currentMode = "type";
+  let focusKey = null;
+  let selectedId = null;
+  let animFrame = null;
+  let orbiters = [];
+  let activeCluster = null;
 
-        let currentMode = "type";
-        let currentGraph = null;
-        let currentFocusKey = null;
-        let selectedRecordId = null;
-        let animatedNodes = [];
-        let animationFrame = null;
-        let searchTimer = null;
-        let activeLauncherPanel = null;
-        const cameraState = {
-            focusX: 0,
-            focusY: 0,
-            focusScale: 1,
-            panX: 0,
-            panY: 0,
-            zoom: 1,
+  // ---------- starfield ----------
+  const canvas = document.getElementById("bg");
+  const ctx = canvas.getContext("2d");
+  let stars = [];
+  function resize() {
+    canvas.width = innerWidth; canvas.height = innerHeight;
+    stars = Array.from({ length: Math.min(260, innerWidth / 6) }, () => ({
+      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+      r: Math.random() * 1.2 + 0.2, s: Math.random() * 0.4 + 0.05, tw: Math.random() * Math.PI * 2,
+    }));
+  }
+  function drawBg(t) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (const st of stars) {
+      st.y -= st.s; if (st.y < -2) { st.y = canvas.height + 2; st.x = Math.random() * canvas.width; }
+      const a = 0.35 + 0.4 * Math.sin(t / 900 + st.tw);
+      ctx.globalAlpha = a;
+      ctx.fillStyle = "#9fd8ff";
+      ctx.beginPath(); ctx.arc(st.x, st.y, st.r, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  addEventListener("resize", resize); resize();
+
+  // ---------- helpers ----------
+  function esc(v) { return String(v ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;"); }
+  function fmtN(n) { return Number(n || 0).toLocaleString("en-US"); }
+  function clusterKey(rec) {
+    if (currentMode === "zone") return rec.extras?.zone || "public-map";
+    if (currentMode === "source") return rec.source || "unknown";
+    if (currentMode === "tag") { const t = (rec.tags || "").split(",").filter(Boolean); return t[0] || "untagged"; }
+    return rec.type || "untyped";
+  }
+  function clusterLabel(key) {
+    if (currentMode === "zone") {
+      const z = key === "public-map" ? "Public Map" : key.replace("z-", "").toUpperCase();
+      return z;
+    }
+    return key.replace(/-/g, " ").replace(/\b\w/g, m => m.toUpperCase());
+  }
+  function clusterColor(key, idx) {
+    if (currentMode === "zone") return ZONE_COLORS[key] || "#5b6b78";
+    return TYPE_COLORS[key] || ["#7be7ff", "#ff5db1", "#8fffbe", "#8a9fff", "#b997ff"][idx % 5];
+  }
+
+  // ---------- layout ----------
+  function buildGalaxy() {
+    const groups = {};
+    for (const r of RECORDS) {
+      const k = clusterKey(r);
+      (groups[k] = groups[k] || []).push(r);
+    }
+    const entries = Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
+    const total = entries.length;
+    const cx = innerWidth / 2, cy = innerHeight / 2;
+    const R = Math.min(innerWidth, innerHeight) * 0.32;
+    const clusters = entries.map(([key, recs], i) => {
+      const ang = (i / Math.max(1, total)) * Math.PI * 2 - Math.PI / 2;
+      const r = R * (0.55 + 0.45 * (i % 3) / 2);
+      return {
+        key, recs, x: cx + Math.cos(ang) * r, y: cy + Math.sin(ang) * r * 0.82,
+        color: clusterColor(key, i),
+      };
+    });
+    return clusters;
+  }
+
+  // ---------- rendering ----------
+  function renderLegend(clusters) {
+    legendEl.innerHTML = "";
+    clusters.slice(0, 9).forEach(c => {
+      const li = document.createElement("div");
+      li.className = "li";
+      li.innerHTML = `<span class="sw" style="background:${c.color}"></span>${esc(clusterLabel(c.key))} — ${fmtN(c.recs.length)}`;
+      legendEl.appendChild(li);
+    });
+  }
+
+  function renderModes() {
+    modesEl.innerHTML = "";
+    ["type", "zone", "source", "tag"].forEach(m => {
+      const b = document.createElement("button");
+      b.className = "mode" + (m === currentMode ? " active" : "");
+      b.textContent = m;
+      b.onclick = () => { currentMode = m; focusKey = null; selectedId = null; drawGalaxy(); };
+      modesEl.appendChild(b);
+    });
+  }
+
+  function drawGalaxy() {
+    cancelAnimationFrame(animFrame);
+    stage.innerHTML = "";
+    orbiters = [];
+    activeCluster = null;
+    const clusters = buildGalaxy();
+    renderLegend(clusters);
+
+    clusters.forEach(c => {
+      const size = Math.max(52, Math.min(150, 34 + Math.sqrt(c.recs.length) * 6.5));
+      const el = document.createElement("div");
+      el.className = "cluster";
+      el.style.left = c.x + "px"; el.style.top = c.y + "px";
+      el.style.width = size + "px"; el.style.height = size + "px";
+      el.style.setProperty("--glow", c.color + "66");
+      el.innerHTML = `<div class="orb" style="background:radial-gradient(circle at 40% 35%, ${c.color}cc, ${c.color}33 70%)"></div>
+        <div class="label">${esc(clusterLabel(c.key))} <b>${fmtN(c.recs.length)}</b></div>`;
+      el.onclick = () => { focusKey = c.key; selectedId = null; drawGalaxy(); };
+      stage.appendChild(el);
+    });
+
+    if (focusKey) {
+      const c = clusters.find(x => x.key === focusKey);
+      if (c) {
+        activeCluster = c;
+        const shown = c.recs.slice(0, 140);
+        const step = c.recs.length > shown.length ? (c.recs.length / shown.length) : 1;
+        shown.forEach((rec, i) => {
+          const rad = Math.max(90, sizeOf(c) / 2 + 46 + (i % 9) * 24);
+          const ang = (i / Math.max(1, shown.length)) * Math.PI * 2 + (i % 7) * 0.15;
+          const node = document.createElement("div");
+          node.className = "record";
+          const rc = rec.extras?.zone ? (ZONE_COLORS[rec.extras.zone] || "#7be7ff") : (TYPE_COLORS[rec.type] || "#7be7ff");
+          node.style.setProperty("--rc", rc);
+          node.dataset.id = rec.id;
+          node.onmouseenter = (e) => showTip(e, rec);
+          node.onmousemove = (e) => moveTip(e);
+          node.onmouseleave = () => { tooltip.style.display = "none"; };
+          node.onclick = () => selectRecord(rec.id);
+          stage.appendChild(node);
+          orbiters.push({ el: node, x: c.x, y: c.y, rad, ang, speed: 0.00028 + (i % 11) * 0.00005, rec });
+        });
+        if (c.recs.length > shown.length) {
+          const more = document.createElement("div");
+          more.className = "hint";
+          more.style.position = "fixed";
+          more.style.left = "50%"; more.style.top = "64px";
+          more.style.transform = "translateX(-50%)";
+          more.style.zIndex = 10;
+          more.textContent = `focus: ${esc(clusterLabel(c.key))} — showing ${shown.length} of ${fmtN(c.recs.length)} records · all in drawer`;
+          stage.appendChild(more);
+          setTimeout(() => more.remove(), 6000);
+        }
+      }
+    }
+    tick();
+  }
+
+  function sizeOf(c) { return Math.max(52, Math.min(150, 34 + Math.sqrt(c.recs.length) * 6.5)); }
+
+  function tick(time = 0) {
+    for (const o of orbiters) {
+      const a = o.ang + time * o.speed;
+      o.el.style.left = (o.x + Math.cos(a) * o.rad) + "px";
+      o.el.style.top = (o.y + Math.sin(a) * o.rad * 0.7) + "px";
+    }
+    animFrame = requestAnimationFrame(tick);
+  }
+
+  function showTip(e, rec) {
+    const zone = rec.extras?.zone_name ? ` · ${esc(rec.extras.zone_name)}` : "";
+    const ip = rec.extras?.ip ? ` · ${esc(rec.extras.ip)}` : "";
+    const st = rec.extras?.http_status ? ` · HTTP ${rec.extras.http_status}` : "";
+    tooltip.innerHTML = `<b>${esc(rec.title)}</b><br><span style="color:var(--dim)">${esc(rec.type)}${zone}${ip}${st}</span>`;
+    tooltip.style.display = "block";
+    moveTip(e);
+  }
+  function moveTip(e) {
+    const pad = 14;
+    let x = e.clientX + pad, y = e.clientY + pad;
+    const r = tooltip.getBoundingClientRect();
+    if (x + r.width > innerWidth) x = e.clientX - r.width - pad;
+    if (y + r.height > innerHeight) y = e.clientY - r.height - pad;
+    tooltip.style.left = x + "px"; tooltip.style.top = y + "px";
+  }
+
+  // ---------- selection / drawer ----------
+  function selectRecord(id) {
+    selectedId = id;
+    const rec = byId.get(id);
+    if (!rec) return;
+    document.querySelectorAll(".record").forEach(n => n.classList.toggle("sel", n.dataset.id == id));
+    openDrawer(rec);
+  }
+
+  function statusClass(code) {
+    if (code == null) return null;
+    if (code < 400) return "ok";
+    if (code < 500) return "warn";
+    return "bad";
+  }
+  function statusText(code) {
+    if (code == null) return "NO HTTP RESPONSE";
+    return "HTTP " + code;
+  }
+
+  function openDrawer(rec) {
+    const ex = rec.extras || {};
+    document.getElementById("dTitle").textContent = rec.title;
+    document.getElementById("dType").textContent = rec.type + (ex.role ? " // " + ex.role : "");
+    document.getElementById("dSrc").textContent = "SOURCE // " + (rec.source || "unknown");
+    document.getElementById("dDesc").textContent = rec.description || "No description loaded.";
+    const kv = document.getElementById("dKv");
+    kv.innerHTML = "";
+    const addKV = (k, v, cls) => {
+      const d = document.createElement("div");
+      d.className = "kv";
+      d.innerHTML = `<div class="k">${esc(k)}</div><div class="v ${cls || ""}">${v}</div>`;
+      kv.appendChild(d);
+    };
+    if (ex.zone_name) addKV("Zone", esc(ex.zone_name), "zone");
+    if (ex.role) addKV("Role", esc(ex.role));
+    if (ex.ip) addKV("Resolved IP", esc(ex.ip));
+    if (ex.dns && ex.dns.length) addKV("DNS (passive)", esc(ex.dns.join(", ")));
+    if (ex.http_status != null) addKV("Endpoint status", `<span class="status ${statusClass(ex.http_status)}">${statusText(ex.http_status)}</span>`);
+    if (ex.server) addKV("Server", esc(ex.server));
+    if (ex.count != null) addKV("Camera count", fmtN(ex.count));
+    if (ex.lat != null && ex.lon != null) addKV("Centroid", `${ex.lat.toFixed(4)}, ${ex.lon.toFixed(4)}`);
+    if (ex.endpoints && ex.endpoints.length) addKV("Known endpoints", esc(ex.endpoints.slice(0, 20).join(" · ")));
+    if (rec.tags) addKV("Tags", esc(rec.tags));
+    if (rec.url) addKV("URL", `<a href="${esc(rec.url)}" target="_blank" rel="noopener" style="color:var(--accent)">${esc(rec.url)}</a>`);
+
+    const acts = document.getElementById("dActions");
+    acts.innerHTML = "";
+    const openBtn = document.createElement("a");
+    openBtn.textContent = "OPEN ENDPOINT ↗";
+    openBtn.href = rec.url || "#";
+    openBtn.target = "_blank"; openBtn.rel = "noopener";
+    if (!rec.url) openBtn.classList.add("disabled");
+    acts.appendChild(openBtn);
+    const copyBtn = document.createElement("button");
+    copyBtn.textContent = "COPY HOST";
+    copyBtn.className = "ghost";
+    copyBtn.onclick = () => {
+      navigator.clipboard.writeText(rec.url ? rec.url.replace("https://", "") : rec.title).then(() => {
+        copyBtn.textContent = "COPIED ✓";
+        setTimeout(() => (copyBtn.textContent = "COPY HOST"), 1200);
+      });
+    };
+    acts.appendChild(copyBtn);
+    const closeBtn = document.createElement("button");
+    closeBtn.textContent = "DISMISS";
+    closeBtn.className = "ghost";
+    closeBtn.onclick = () => closeDrawer();
+    acts.appendChild(closeBtn);
+
+    // sibling records in the same cluster
+    const list = document.getElementById("dList");
+    list.innerHTML = "";
+    if (activeCluster && activeCluster.recs.length > 1) {
+      const h = document.createElement("div");
+      h.className = "k";
+      h.style.cssText = "font-size:8px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:8px";
+      h.textContent = `SECTOR RECORDS — ${fmtN(activeCluster.recs.length)} IN FOCUS`;
+      list.appendChild(h);
+      activeCluster.recs.slice(0, 60).forEach(r => {
+        const row = document.createElement("div");
+        row.className = "rl";
+        row.innerHTML = `<span class="c">${esc(r.title)}</span> <span style="color:var(--dim)">· ${esc(r.type)}</span>${r.extras?.http_status != null ? ` <span class="status ${statusClass(r.extras.http_status)}">${r.extras.http_status}</span>` : ""}`;
+        row.onclick = () => selectRecord(r.id);
+        if (r.id === rec.id) row.style.borderColor = "var(--accent)";
+        list.appendChild(row);
+      });
+    }
+    drawer.classList.add("open");
+  }
+
+  function closeDrawer() {
+    drawer.classList.remove("open");
+    document.querySelectorAll(".record").forEach(n => n.classList.remove("sel"));
+    selectedId = null;
+  }
+
+  document.getElementById("drawerClose").onclick = closeDrawer;
+  addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
+
+  // ---------- search ----------
+  let searchTimer = null;
+  searchInput.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    const q = searchInput.value.trim().toLowerCase();
+    if (!q) { resultsEl.style.display = "none"; return; }
+    searchTimer = setTimeout(() => {
+      const hits = RECORDS.filter(r => {
+        const hay = (r.title + " " + (r.description || "") + " " + (r.tags || "") + " " + (r.extras?.role || "") + " " + (r.extras?.zone_name || "")).toLowerCase();
+        return q.split(/\s+/).every(t => hay.includes(t));
+      }).slice(0, 20);
+      resultsEl.innerHTML = "";
+      if (!hits.length) {
+        resultsEl.innerHTML = `<div class="r"><div class="m">NO MATCHES — try a hostname, city, zone, or role</div></div>`;
+      }
+      hits.forEach(r => {
+        const row = document.createElement("div");
+        row.className = "r";
+        row.innerHTML = `<span class="tag">${esc(r.type)}</span><div class="t">${esc(r.title)}</div><div class="m">${esc((r.extras?.role || r.description || "").slice(0, 90))}</div>`;
+        row.onclick = () => {
+          resultsEl.style.display = "none";
+          searchInput.value = "";
+          // fly to the record's cluster and select it
+          currentMode = "type";
+          focusKey = r.type;
+          if (r.extras?.zone && r.type === "subdomain") { currentMode = "zone"; focusKey = r.extras.zone; }
+          drawGalaxy();
+          setTimeout(() => {
+            const node = document.querySelector(`.record[data-id="${r.id}"]`);
+            if (node) { node.scrollIntoView({ block: "center" }); selectRecord(r.id); }
+            else selectRecord(r.id);
+          }, 80);
         };
-        const dragState = {
-            active: false,
-            startX: 0,
-            startY: 0,
-            originPanX: 0,
-            originPanY: 0,
-            pointerId: null,
-            moved: false,
-        };
-        const pinchState = {
-            active: false,
-            startDistance: 0,
-            originZoom: 1,
-        };
-        const touchState = {
-            active: false,
-            pinch: false,
-            startX: 0,
-            startY: 0,
-            originPanX: 0,
-            originPanY: 0,
-            moved: false,
-            startDistance: 0,
-            originZoom: 1,
-            tapTarget: null,
-        };
-        const activePointers = new Map();
-        let suppressSelectionUntil = 0;
-        const interactiveSelector = ".cluster-shell, .record-node";
+        resultsEl.appendChild(row);
+      });
+      resultsEl.style.display = "block";
+    }, 140);
+  });
+  document.addEventListener("click", (e) => {
+    if (!resultsEl.contains(e.target) && e.target !== searchInput) resultsEl.style.display = "none";
+  });
 
-        function openSearchOverlay() {
-            setActiveLauncherPanel(null);
-            searchOverlay.classList.add("open");
-            searchOverlay.setAttribute("aria-hidden", "false");
-            searchInput.focus();
-        }
+  // ---------- stats ----------
+  document.getElementById("statTotal").textContent = fmtN(RECORDS.length);
+  document.getElementById("statTypes").textContent = ARCH.stats.total_types;
+  document.getElementById("statZones").textContent = Object.keys(ZONE_COLORS).length;
+  document.getElementById("statLive").textContent = RECORDS.filter(r => r.extras?.http_status != null && r.extras.http_status < 400).length;
 
-        function closeSearchOverlay() {
-            searchOverlay.classList.remove("open");
-            searchOverlay.setAttribute("aria-hidden", "true");
-        }
-
-        function bodyColors(index, kind) {
-            const colors = [
-                { core: "rgba(123, 231, 255, 0.92)", glow: "rgba(123, 231, 255, 0.34)" },
-                { core: "rgba(255, 93, 177, 0.92)", glow: "rgba(255, 93, 177, 0.30)" },
-                { core: "rgba(143, 255, 190, 0.9)", glow: "rgba(143, 255, 190, 0.28)" },
-                { core: "rgba(138, 159, 255, 0.92)", glow: "rgba(138, 159, 255, 0.32)" },
-                { core: "rgba(185, 151, 255, 0.92)", glow: "rgba(185, 151, 255, 0.32)" },
-            ];
-            const color = colors[index % colors.length];
-            if (kind === "sun") {
-                return { core: "rgba(255, 213, 106, 0.95)", glow: "rgba(255, 213, 106, 0.42)" };
-            }
-            if (kind === "moon") {
-                return { core: "rgba(143, 255, 190, 0.85)", glow: "rgba(143, 255, 190, 0.28)" };
-            }
-            return color;
-        }
-
-        function formatLabel(value) {
-            return value.replace(/-/g, " ");
-        }
-
-        function setTelemetryPinned(open) {
-            telemetryShell.classList.toggle("telemetry-panel-open", open);
-            telemetryShell.dataset.open = String(open);
-            telemetryToggle.setAttribute("aria-expanded", String(open));
-        }
-
-        function setActiveLauncherPanel(panelName) {
-            activeLauncherPanel = panelName;
-            setTelemetryPinned(panelName === "telemetry");
-            modeShell.dataset.open = String(panelName === "mode");
-            modeLauncher.setAttribute("aria-expanded", String(panelName === "mode"));
-            systemShell.dataset.open = String(panelName === "system");
-            systemLauncher.setAttribute("aria-expanded", String(panelName === "system"));
-        }
-
-        function togglePanel(panelName) {
-            setActiveLauncherPanel(activeLauncherPanel === panelName ? null : panelName);
-        }
-
-        function escapeHtml(value) {
-            return String(value || "")
-                .replaceAll("&", "&amp;")
-                .replaceAll("<", "&lt;")
-                .replaceAll(">", "&gt;");
-        }
-
-        function applyCamera() {
-            document.documentElement.style.setProperty("--camera-x", `${cameraState.focusX + cameraState.panX}px`);
-            document.documentElement.style.setProperty("--camera-y", `${cameraState.focusY + cameraState.panY}px`);
-            document.documentElement.style.setProperty("--camera-scale", `${cameraState.focusScale * cameraState.zoom}`);
-        }
-
-        function resetCamera() {
-            cameraState.panX = 0;
-            cameraState.panY = 0;
-            cameraState.zoom = 1;
-            applyCamera();
-        }
-
-        function panCamera(deltaX, deltaY) {
-            cameraState.panX += deltaX;
-            cameraState.panY += deltaY;
-            applyCamera();
-        }
-
-        function zoomCamera(direction) {
-            const nextZoom = Math.min(2.4, Math.max(0.65, cameraState.zoom + direction));
-            cameraState.zoom = Number(nextZoom.toFixed(3));
-            applyCamera();
-        }
-
-        function setZoom(nextZoom) {
-            cameraState.zoom = Number(Math.min(2.4, Math.max(0.65, nextZoom)).toFixed(3));
-            applyCamera();
-        }
-
-        function positionAnimatedNode(node, index, time = 0) {
-            const theta = node.angle + time * node.speed;
-            const wobble = IOS_SAFE_MODE ? 0 : Math.sin(theta * 2.3 + index) * node.wobble;
-            node.element.style.left = `calc(${node.centerX}% + ${(Math.cos(theta) * (node.radius + wobble)).toFixed(2)}px)`;
-            node.element.style.top = `calc(${node.centerY}% + ${(Math.sin(theta) * (node.radius * 0.62 + wobble)).toFixed(2)}px)`;
-        }
-
-        function calculateFocusCamera(cluster, viewportWidth = window.innerWidth, viewportHeight = window.innerHeight) {
-            if (!cluster) {
-                return {
-                    focusX: 0,
-                    focusY: 0,
-                    focusScale: 1,
-                };
-            }
-            const isMobile = viewportWidth <= 768;
-            const targetX = viewportWidth * 0.5 - (viewportWidth * cluster.x / 100);
-            const targetY = viewportHeight * 0.5 - (viewportHeight * cluster.y / 100);
-
-            if (isMobile) {
-                return {
-                    focusX: targetX * 0.92,
-                    focusY: targetY * 0.9,
-                    focusScale: 0.72,
-                };
-            }
-
-            return {
-                focusX: targetX * 0.45,
-                focusY: targetY * 0.45,
-                focusScale: 1.14,
-            };
-        }
-
-        function updateCameraForFocus(cluster) {
-            const nextFocus = calculateFocusCamera(cluster);
-            cameraState.focusX = nextFocus.focusX;
-            cameraState.focusY = nextFocus.focusY;
-            cameraState.focusScale = nextFocus.focusScale;
-            applyCamera();
-        }
-
-        function renderModeButtons(modes) {
-            modeSwitcher.innerHTML = "";
-            searchModeFilter.innerHTML = "";
-            modes.forEach((mode) => {
-                const button = document.createElement("button");
-                button.type = "button";
-                button.className = "mode-button border border-slate-500/40 px-3 py-2 text-[11px] uppercase tracking-[0.22em] text-slate-200/75 transition-all";
-                button.dataset.mode = mode;
-                button.dataset.active = String(mode === currentMode);
-                button.textContent = formatLabel(mode);
-                button.addEventListener("click", () => switchMode(mode));
-                modeSwitcher.appendChild(button);
-
-                const option = document.createElement("option");
-                option.value = mode;
-                option.textContent = formatLabel(mode);
-                if (mode === currentMode) {
-                    option.selected = true;
-                }
-                searchModeFilter.appendChild(option);
-            });
-        }
-
-        function renderSystemPanel(focus, selectedRecord) {
-            if (!focus) {
-                systemTitle.textContent = "Awaiting focus";
-                systemCount.textContent = "0 records";
-                systemDescription.textContent = "Choose a body or search result to fly into that system.";
-                systemMode.textContent = currentMode;
-                systemSelected.textContent = "None";
-                systemOrbit.textContent = "Idle";
-                systemRecords.innerHTML = "";
-                recordDetails.classList.add("hidden");
-                recordMeta.innerHTML = "";
-                openLinkButton.href = "#";
-                telemetryFocus.textContent = "Awaiting lock";
-                return;
-            }
-            systemTitle.textContent = focus.label;
-            systemCount.textContent = `${focus.count} records`;
-            systemDescription.textContent = `${focus.label} is rendered as a ${focus.count >= 120 ? "sun" : focus.count >= 35 ? "planet" : "moon"} in ${formatLabel(currentMode)} space, with archive records drifting in its local field.`;
-            systemMode.textContent = formatLabel(currentMode);
-            systemSelected.textContent = selectedRecord ? selectedRecord.title : "Cluster anchor";
-            systemOrbit.textContent = focus.count > 60 ? "Dense" : focus.count > 20 ? "Warm" : "Sparse";
-            telemetryFocus.textContent = focus.label;
-            if (selectedRecord) {
-                recordDetails.classList.remove("hidden");
-                openLinkButton.href = selectedRecord.url && selectedRecord.url !== "N/A" ? selectedRecord.url : "#";
-                openLinkButton.setAttribute("aria-disabled", openLinkButton.href === "#" ? "true" : "false");
-                recordMeta.innerHTML = `
-                    <div class="glass-panel p-3">
-                        <p class="text-[10px] uppercase tracking-[0.22em] text-muted mb-1">Title</p>
-                        <p class="text-white">${escapeHtml(selectedRecord.title || "Untitled")}</p>
-                    </div>
-                    <div class="glass-panel p-3">
-                        <p class="text-[10px] uppercase tracking-[0.22em] text-muted mb-1">Description</p>
-                        <p class="text-slate-200/80">${escapeHtml(selectedRecord.description || "No description loaded.")}</p>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="glass-panel p-3"><p class="text-[10px] uppercase tracking-[0.22em] text-muted mb-1">Type</p><p class="text-primary">${escapeHtml(selectedRecord.type || "untyped")}</p></div>
-                        <div class="glass-panel p-3"><p class="text-[10px] uppercase tracking-[0.22em] text-muted mb-1">Source</p><p class="text-white">${escapeHtml(selectedRecord.source || "unknown")}</p></div>
-                        <div class="glass-panel p-3"><p class="text-[10px] uppercase tracking-[0.22em] text-muted mb-1">Tags</p><p class="text-slate-200/80">${escapeHtml(selectedRecord.tags || "none")}</p></div>
-                        <div class="glass-panel p-3"><p class="text-[10px] uppercase tracking-[0.22em] text-muted mb-1">Candidates</p><p class="text-slate-200/80">${escapeHtml(selectedRecord.candidate_types || "none")}</p></div>
-                    </div>
-                    <div class="glass-panel p-3">
-                        <p class="text-[10px] uppercase tracking-[0.22em] text-muted mb-1">URL</p>
-                        <p class="break-all text-slate-200/80">${escapeHtml(selectedRecord.url || "N/A")}</p>
-                    </div>
-                `;
-            } else {
-                recordDetails.classList.add("hidden");
-                recordMeta.innerHTML = "";
-                openLinkButton.href = "#";
-            }
-            systemRecords.innerHTML = "";
-            focus.records.slice(0, 10).forEach((record) => {
-                const button = document.createElement("button");
-                button.type = "button";
-                button.className = "w-full text-left border border-slate-500/30 bg-black/20 px-3 py-3 hover:border-primary/50";
-                button.innerHTML = `
-                    <div class="flex items-center justify-between gap-3">
-                        <span class="font-heading text-lg text-white">${escapeHtml(record.title || "Untitled")}</span>
-                        <span class="font-mono text-[10px] uppercase tracking-[0.22em] text-primary">${escapeHtml(record.type || "untyped")}</span>
-                    </div>
-                    <p class="mt-1 text-sm text-slate-300/75">${escapeHtml(record.description || "No description loaded.")}</p>
-                `;
-                button.addEventListener("click", () => {
-                    selectedRecordId = record.id;
-                    renderGalaxy(currentGraph);
-                });
-                systemRecords.appendChild(button);
-            });
-        }
-
-        function renderGalaxy(graph) {
-            currentGraph = graph;
-            galaxyStage.innerHTML = "";
-            animatedNodes = [];
-            cancelAnimationFrame(animationFrame);
-            telemetryMode.textContent = formatLabel(graph.mode);
-            telemetryClusters.textContent = String(graph.clusters.length);
-            telemetryRecords.textContent = String(graph.focus ? graph.focus.count : 0);
-            renderModeButtons(graph.available_modes || ["type"]);
-
-            graph.clusters.forEach((cluster, index) => {
-                const shell = document.createElement("button");
-                const size = Math.max(54, Math.min(170, 36 + cluster.count * 0.55));
-                const colors = bodyColors(index, cluster.body_kind);
-                shell.type = "button";
-                shell.className = "cluster-shell";
-                shell.dataset.kind = cluster.body_kind;
-                shell.dataset.active = String(cluster.key === graph.focus?.key);
-                shell.style.left = `${cluster.x}%`;
-                shell.style.top = `${cluster.y}%`;
-                shell.style.setProperty("--size", size);
-                shell.style.setProperty("--body-core", colors.core);
-                shell.style.setProperty("--body-glow", colors.glow);
-                shell.innerHTML = `<span class="cluster-label">${cluster.label}<br><span class="font-mono text-[10px] tracking-[0.22em]">${cluster.count} records</span></span>`;
-                shell.addEventListener("click", () => {
-                    if (performance.now() < suppressSelectionUntil) {
-                        return;
-                    }
-                    selectedRecordId = null;
-                    loadGraph(currentMode, cluster.key).catch(console.error);
-                });
-                galaxyStage.appendChild(shell);
-            });
-
-            const focusCluster = graph.clusters.find((cluster) => cluster.key === graph.focus?.key) || null;
-            if (graph.focus && focusCluster) {
-                const orbitCenterX = focusCluster.x;
-                const orbitCenterY = focusCluster.y;
-                const focusRecords = graph.focus.records.slice(0, IOS_SAFE_MODE ? 48 : 120);
-                focusRecords.forEach((record, index) => {
-                    const orbit = document.createElement("div");
-                    const orbitRadius = 90 + (index % 7) * 26 + Math.floor(index / 7) * 12;
-                    const angle = (index / Math.max(1, focusRecords.length)) * Math.PI * 2;
-                    orbit.className = "orbit-ring";
-                    orbit.style.left = `${orbitCenterX}%`;
-                    orbit.style.top = `${orbitCenterY}%`;
-                    orbit.style.width = `${orbitRadius * 2}px`;
-                    orbit.style.height = `${orbitRadius * 2}px`;
-                    orbit.style.opacity = String(Math.max(0.1, 0.36 - index * 0.006));
-                    galaxyStage.appendChild(orbit);
-
-                    const node = document.createElement("button");
-                    node.type = "button";
-                    node.className = "record-node";
-                    node.dataset.selected = String(selectedRecordId === record.id);
-                    node.title = record.title || "Untitled";
-                    node.style.left = `${orbitCenterX}%`;
-                    node.style.top = `${orbitCenterY}%`;
-                    node.addEventListener("click", () => {
-                        if (performance.now() < suppressSelectionUntil) {
-                            return;
-                        }
-                        selectedRecordId = record.id;
-                        renderGalaxy(currentGraph);
-                    });
-                    galaxyStage.appendChild(node);
-                    animatedNodes.push({
-                        element: node,
-                        centerX: orbitCenterX,
-                        centerY: orbitCenterY,
-                        radius: orbitRadius,
-                        angle,
-                        speed: 0.0002 + (index % 9) * 0.00004,
-                        wobble: 4 + (index % 5),
-                        record,
-                    });
-                });
-            }
-
-            const selectedRecord = graph.focus?.records.find((record) => record.id === selectedRecordId) || null;
-            renderSystemPanel(graph.focus, selectedRecord);
-            updateCameraForFocus(focusCluster);
-            if (IOS_SAFE_MODE) {
-                animatedNodes.forEach((node, index) => positionAnimatedNode(node, index));
-            } else {
-                tick();
-            }
-        }
-
-        function tick(time = 0) {
-            animatedNodes.forEach((node, index) => positionAnimatedNode(node, index, time));
-            animationFrame = requestAnimationFrame(tick);
-        }
-
-        async function loadGraph(mode = currentMode, focusKey = currentFocusKey) {
-            currentMode = mode;
-            currentFocusKey = focusKey || null;
-            const params = new URLSearchParams({ mode });
-            if (focusKey) {
-                params.set("focus_key", focusKey);
-            }
-            const response = await fetch(`/api/graph?${params.toString()}`);
-            const graph = await response.json();
-            currentFocusKey = graph.focus?.key || null;
-            renderGalaxy(graph);
-        }
-
-        async function focusRecord(recordId) {
-            const params = new URLSearchParams({ record_id: String(recordId), mode: currentMode });
-            const response = await fetch(`/api/graph/focus?${params.toString()}`);
-            const graph = await response.json();
-            selectedRecordId = recordId;
-            currentFocusKey = graph.focus?.key || null;
-            renderGalaxy(graph);
-        }
-
-        async function switchMode(mode) {
-            selectedRecordId = null;
-            await loadGraph(mode, null);
-        }
-
-        async function runSearch() {
-            const query = searchInput.value.trim();
-            if (!query) {
-                resultsCount.textContent = "0 entities located";
-                searchResults.innerHTML = "";
-                return;
-            }
-            const startedAt = performance.now();
-            const params = new URLSearchParams({
-                q: query,
-                field: searchFieldFilter.value,
-                limit: "12",
-            });
-            const response = await fetch(`/api/search?${params.toString()}`);
-            const payload = await response.json();
-            searchResults.innerHTML = "";
-            resultsCount.textContent = `${payload.results.length} entities located`;
-            payload.results.forEach((record) => {
-                const button = document.createElement("button");
-                button.type = "button";
-                button.className = "result-card w-full text-left border border-slate-500/30 bg-black/20 px-4 py-4 hover:border-primary/50";
-                button.innerHTML = `
-                    <div class="flex items-center justify-between gap-3">
-                        <div>
-                            <h4 class="font-heading text-xl text-primary">${record.title || "Untitled"}</h4>
-                            <p class="mt-1 text-sm text-slate-300/75">${record.description || "No description loaded."}</p>
-                        </div>
-                        <div class="text-right">
-                            <span class="block font-mono text-[10px] uppercase tracking-[0.22em] text-primary">${record.type || "untyped"}</span>
-                            <span class="block mt-1 font-mono text-[10px] uppercase tracking-[0.22em] text-slate-400">${record.source || "unknown"}</span>
-                        </div>
-                    </div>
-                `;
-                button.addEventListener("click", async () => {
-                    currentMode = searchModeFilter.value;
-                    closeSearchOverlay();
-                    await focusRecord(record.id);
-                });
-                searchResults.appendChild(button);
-            });
-            searchLatency.textContent = `${(performance.now() - startedAt).toFixed(2)}ms latency`;
-        }
-
-        discoverLauncher.addEventListener("click", openSearchOverlay);
-        closeSearch.addEventListener("click", closeSearchOverlay);
-        searchBackdrop.addEventListener("click", closeSearchOverlay);
-        telemetryToggle.addEventListener("click", (event) => {
-            event.stopPropagation();
-            togglePanel("telemetry");
-        });
-        modeLauncher.addEventListener("click", (event) => {
-            event.stopPropagation();
-            togglePanel("mode");
-        });
-        systemLauncher.addEventListener("click", (event) => {
-            event.stopPropagation();
-            togglePanel("system");
-        });
-        telemetryShell.addEventListener("mouseenter", () => {
-            if (window.matchMedia("(hover: hover)").matches && activeLauncherPanel === null) {
-                setActiveLauncherPanel("telemetry");
-                telemetryShell.dataset.hoverPreview = "true";
-            }
-        });
-        telemetryShell.addEventListener("mouseleave", () => {
-            if (telemetryShell.dataset.hoverPreview === "true") {
-                setActiveLauncherPanel(null);
-                delete telemetryShell.dataset.hoverPreview;
-            }
-        });
-        document.addEventListener("click", (event) => {
-            if (!telemetryShell.contains(event.target) && !modeShell.contains(event.target) && !systemShell.contains(event.target)) {
-                setActiveLauncherPanel(null);
-                delete telemetryShell.dataset.hoverPreview;
-            }
-        });
-        clearSelectionButton.addEventListener("click", () => {
-            selectedRecordId = null;
-            renderGalaxy(currentGraph);
-        });
-        function stopInteractionModes() {
-            dragState.active = false;
-            dragState.pointerId = null;
-            dragState.moved = false;
-            pinchState.active = false;
-            galaxyStage.classList.remove("dragging");
-        }
-
-        function distanceBetweenPointers() {
-            const pointers = Array.from(activePointers.values());
-            if (pointers.length < 2) {
-                return 0;
-            }
-            const [first, second] = pointers;
-            return Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY);
-        }
-
-        function distanceBetweenTouches(touches) {
-            if (touches.length < 2) {
-                return 0;
-            }
-            const [first, second] = touches;
-            return Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY);
-        }
-
-        galaxyStage.addEventListener("pointerdown", (event) => {
-            if (event.target.closest(".launcher-button, .launcher-panel, .telemetry-toggle, .telemetry-panel")) {
-                return;
-            }
-            if (event.target.closest(interactiveSelector)) {
-                return;
-            }
-            activePointers.set(event.pointerId, { clientX: event.clientX, clientY: event.clientY });
-            if (!galaxyStage.hasPointerCapture(event.pointerId)) {
-                try {
-                    galaxyStage.setPointerCapture(event.pointerId);
-                } catch (error) {
-                    // Synthetic events in tests may not create capturable pointers.
-                }
-            }
-            if (activePointers.size >= 2) {
-                dragState.active = false;
-                pinchState.active = true;
-                pinchState.startDistance = distanceBetweenPointers();
-                pinchState.originZoom = cameraState.zoom;
-                galaxyStage.classList.add("dragging");
-                return;
-            }
-            pinchState.active = false;
-            dragState.active = true;
-            dragState.pointerId = event.pointerId;
-            dragState.startX = event.clientX;
-            dragState.startY = event.clientY;
-            dragState.originPanX = cameraState.panX;
-            dragState.originPanY = cameraState.panY;
-            dragState.moved = false;
-            galaxyStage.classList.add("dragging");
-            event.preventDefault();
-        });
-        window.addEventListener("pointermove", (event) => {
-            if (activePointers.has(event.pointerId)) {
-                activePointers.set(event.pointerId, { clientX: event.clientX, clientY: event.clientY });
-            }
-            if (pinchState.active && activePointers.size >= 2) {
-                const distance = distanceBetweenPointers();
-                if (distance > 0 && pinchState.startDistance > 0) {
-                    const scaleRatio = distance / pinchState.startDistance;
-                    setZoom(pinchState.originZoom * scaleRatio);
-                }
-                return;
-            }
-            if (!dragState.active || dragState.pointerId !== event.pointerId) {
-                return;
-            }
-            cameraState.panX = dragState.originPanX + (event.clientX - dragState.startX);
-            cameraState.panY = dragState.originPanY + (event.clientY - dragState.startY);
-            if (Math.abs(event.clientX - dragState.startX) > 8 || Math.abs(event.clientY - dragState.startY) > 8) {
-                dragState.moved = true;
-                suppressSelectionUntil = performance.now() + 300;
-            }
-            applyCamera();
-            event.preventDefault();
-        });
-        window.addEventListener("pointerup", (event) => {
-            activePointers.delete(event.pointerId);
-            if (dragState.active && dragState.pointerId === event.pointerId && dragState.moved) {
-                suppressSelectionUntil = performance.now() + 300;
-            }
-            if (activePointers.size >= 2) {
-                pinchState.startDistance = distanceBetweenPointers();
-                pinchState.originZoom = cameraState.zoom;
-                return;
-            }
-            stopInteractionModes();
-            if (galaxyStage.hasPointerCapture(event.pointerId)) {
-                try {
-                    galaxyStage.releasePointerCapture(event.pointerId);
-                } catch (error) {
-                    // Ignore stale capture state.
-                }
-            }
-        });
-        window.addEventListener("pointercancel", (event) => {
-            activePointers.delete(event.pointerId);
-            stopInteractionModes();
-            if (galaxyStage.hasPointerCapture(event.pointerId)) {
-                try {
-                    galaxyStage.releasePointerCapture(event.pointerId);
-                } catch (error) {
-                    // Ignore stale capture state.
-                }
-            }
-        });
-        document.addEventListener("click", (event) => {
-            if (performance.now() >= suppressSelectionUntil) {
-                return;
-            }
-            if (event.target.closest(interactiveSelector)) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-        }, true);
-        galaxyStage.addEventListener("touchstart", (event) => {
-            if (event.target.closest(".launcher-button, .launcher-panel, .telemetry-toggle, .telemetry-panel")) {
-                return;
-            }
-            if (event.touches.length >= 2) {
-                touchState.active = false;
-                touchState.pinch = true;
-                touchState.moved = true;
-                touchState.startDistance = distanceBetweenTouches(event.touches);
-                touchState.originZoom = cameraState.zoom;
-                galaxyStage.classList.add("dragging");
-                return;
-            }
-            const touch = event.touches[0];
-            touchState.active = true;
-            touchState.pinch = false;
-            touchState.startX = touch.clientX;
-            touchState.startY = touch.clientY;
-            touchState.originPanX = cameraState.panX;
-            touchState.originPanY = cameraState.panY;
-            touchState.moved = false;
-            touchState.tapTarget = event.target.closest(interactiveSelector);
-            galaxyStage.classList.add("dragging");
-        }, { passive: true });
-        galaxyStage.addEventListener("touchmove", (event) => {
-            if (touchState.pinch && event.touches.length >= 2) {
-                const distance = distanceBetweenTouches(event.touches);
-                if (distance > 0 && touchState.startDistance > 0) {
-                    const scaleRatio = distance / touchState.startDistance;
-                    setZoom(touchState.originZoom * scaleRatio);
-                }
-                event.preventDefault();
-                return;
-            }
-            if (!touchState.active || event.touches.length !== 1) {
-                return;
-            }
-            const touch = event.touches[0];
-            const deltaX = touch.clientX - touchState.startX;
-            const deltaY = touch.clientY - touchState.startY;
-            cameraState.panX = touchState.originPanX + deltaX;
-            cameraState.panY = touchState.originPanY + deltaY;
-            if (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8) {
-                touchState.moved = true;
-                suppressSelectionUntil = performance.now() + 350;
-                event.preventDefault();
-            }
-            applyCamera();
-        }, { passive: false });
-        galaxyStage.addEventListener("touchend", (event) => {
-            const noTouchesLeft = event.touches.length === 0;
-            if (touchState.pinch && event.touches.length >= 1) {
-                touchState.startDistance = distanceBetweenTouches(event.touches);
-                touchState.originZoom = cameraState.zoom;
-                return;
-            }
-            if (touchState.active && touchState.moved) {
-                suppressSelectionUntil = performance.now() + 350;
-            } else if (touchState.active && !touchState.moved && noTouchesLeft && touchState.tapTarget) {
-                touchState.tapTarget.click();
-            }
-            if (noTouchesLeft) {
-                touchState.active = false;
-                touchState.pinch = false;
-                touchState.tapTarget = null;
-                galaxyStage.classList.remove("dragging");
-            }
-        }, { passive: true });
-        galaxyStage.addEventListener("touchcancel", () => {
-            touchState.active = false;
-            touchState.pinch = false;
-            touchState.tapTarget = null;
-            galaxyStage.classList.remove("dragging");
-        }, { passive: true });
-        galaxyStage.addEventListener("wheel", (event) => {
-            event.preventDefault();
-            zoomCamera(event.deltaY < 0 ? 0.08 : -0.08);
-        }, { passive: false });
-        zoomInButton.addEventListener("click", () => zoomCamera(0.12));
-        zoomOutButton.addEventListener("click", () => zoomCamera(-0.12));
-        searchInput.addEventListener("input", () => {
-            clearTimeout(searchTimer);
-            searchTimer = setTimeout(() => {
-                runSearch().catch(console.error);
-            }, 140);
-        });
-        searchFieldFilter.addEventListener("change", () => runSearch().catch(console.error));
-        searchModeFilter.addEventListener("change", () => {
-            currentMode = searchModeFilter.value;
-        });
-        document.addEventListener("keydown", (event) => {
-            const activeTag = document.activeElement?.tagName;
-            const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(activeTag || "");
-            if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-                event.preventDefault();
-                openSearchOverlay();
-            }
-            if (event.key === "Escape") {
-                closeSearchOverlay();
-                setActiveLauncherPanel(null);
-            }
-            if (typing) {
-                return;
-            }
-            if (event.key === "0") {
-                event.preventDefault();
-                resetCamera();
-            }
-            if (event.key === "+" || event.key === "=") {
-                event.preventDefault();
-                zoomCamera(0.08);
-            }
-            if (event.key === "-" || event.key === "_") {
-                event.preventDefault();
-                zoomCamera(-0.08);
-            }
-            if (event.key === "ArrowUp" || event.key.toLowerCase() === "w") {
-                event.preventDefault();
-                panCamera(0, 36);
-            }
-            if (event.key === "ArrowDown" || event.key.toLowerCase() === "s") {
-                event.preventDefault();
-                panCamera(0, -36);
-            }
-            if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") {
-                event.preventDefault();
-                panCamera(36, 0);
-            }
-            if (event.key === "ArrowRight" || event.key.toLowerCase() === "d") {
-                event.preventDefault();
-                panCamera(-36, 0);
-            }
-        });
-
-        loadGraph("type").catch(console.error);
-        searchInput.value = "";
-    </script>
+  // ---------- boot ----------
+  renderModes();
+  drawGalaxy();
+  setInterval(() => drawBg(performance.now()), 40);
+})();
+</script>
 </body>
 </html>
