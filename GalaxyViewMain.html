@@ -42,6 +42,11 @@
     font-family: inherit; }
   .topbar .mode.active { color: var(--accent); background: rgba(0,255,170,0.08); border: 1px solid var(--line); }
   .topbar .mode:hover { color: var(--text); }
+  .topbar .sep { width: 1px; background: var(--line); margin: 2px 2px; }
+  .topbar .orbitToggle { color: var(--dim); background: transparent; border: 1px solid var(--line); font-size: 9px;
+    letter-spacing: 2px; text-transform: uppercase; padding: 5px 10px; border-radius: 4px; cursor: pointer;
+    font-family: inherit; }
+  .topbar .orbitToggle.on { color: var(--accent); border-color: var(--accent); }
   #stage { position: fixed; inset: 0; z-index: 1; }
   .cluster { position: absolute; z-index: 2; transform: translate(-50%, -50%);
     cursor: pointer; text-align: center; border-radius: 50%; }
@@ -55,9 +60,10 @@
   .cluster .label b { color: var(--accent); font-weight: 700; }
   .cluster:hover .orb { box-shadow: 0 0 60px 12px var(--glow), inset 0 0 30px rgba(255,255,255,0.15); }
   .record { position: absolute; z-index: 3; transform: translate(-50%, -50%);
-    width: 6px; height: 6px; border-radius: 50%; cursor: pointer;
+    width: 7px; height: 7px; border-radius: 50%; cursor: pointer;
     background: radial-gradient(circle, #fff 0%, var(--rc) 45%, transparent 75%);
     box-shadow: 0 0 8px 1px var(--rc); transition: transform 0.15s; }
+  .record::after { content: ""; position: absolute; inset: -9px; border-radius: 50%; }
   .record:hover { transform: translate(-50%, -50%) scale(2.4); z-index: 5; }
   .record.sel { transform: translate(-50%, -50%) scale(2.6); box-shadow: 0 0 14px 3px #fff, 0 0 20px 6px var(--rc); z-index: 6; }
   .tooltip { position: fixed; z-index: 40; background: rgba(4, 8, 14, 0.96); border: 1px solid var(--line);
@@ -194,6 +200,8 @@
   let animFrame = null;
   let orbiters = [];
   let activeCluster = null;
+  let orbitOn = true;
+  let frozenTime = 0;
 
   // ---------- starfield ----------
   const canvas = document.getElementById("bg");
@@ -268,7 +276,10 @@
     clusters.slice(0, 9).forEach(c => {
       const li = document.createElement("div");
       li.className = "li";
+      li.style.cursor = "pointer";
+      li.style.pointerEvents = "auto";
       li.innerHTML = `<span class="sw" style="background:${c.color}"></span>${esc(clusterLabel(c.key))} — ${fmtN(c.recs.length)}`;
+      li.onclick = () => { focusKey = c.key; selectedId = null; drawGalaxy(); };
       legendEl.appendChild(li);
     });
   }
@@ -282,6 +293,21 @@
       b.onclick = () => { currentMode = m; focusKey = null; selectedId = null; drawGalaxy(); };
       modesEl.appendChild(b);
     });
+    const sep = document.createElement("span");
+    sep.className = "sep";
+    modesEl.appendChild(sep);
+    const orbitBtn = document.createElement("button");
+    orbitBtn.className = "orbitToggle on";
+    orbitBtn.id = "orbitToggle";
+    orbitBtn.textContent = "ORBIT: ON";
+    orbitBtn.onclick = () => {
+      orbitOn = !orbitOn;
+      orbitBtn.textContent = "ORBIT: " + (orbitOn ? "ON" : "OFF");
+      orbitBtn.classList.toggle("on", orbitOn);
+      if (!orbitOn) { frozenTime = performance.now(); positionOrbiters(frozenTime); cancelAnimationFrame(animFrame); }
+      else tick();
+    };
+    modesEl.appendChild(orbitBtn);
   }
 
   function drawGalaxy() {
@@ -301,7 +327,7 @@
       el.style.setProperty("--glow", c.color + "66");
       el.innerHTML = `<div class="orb" style="background:radial-gradient(circle at 40% 35%, ${c.color}cc, ${c.color}33 70%)"></div>
         <div class="label">${esc(clusterLabel(c.key))} <b>${fmtN(c.recs.length)}</b></div>`;
-      el.onclick = () => { focusKey = c.key; selectedId = null; drawGalaxy(); };
+      el.onclick = () => { focusKey = (focusKey === c.key) ? null : c.key; selectedId = null; drawGalaxy(); };
       stage.appendChild(el);
     });
 
@@ -344,12 +370,17 @@
 
   function sizeOf(c) { return Math.max(52, Math.min(150, 34 + Math.sqrt(c.recs.length) * 6.5)); }
 
-  function tick(time = 0) {
+  function positionOrbiters(time = 0) {
     for (const o of orbiters) {
       const a = o.ang + time * o.speed;
       o.el.style.left = (o.x + Math.cos(a) * o.rad) + "px";
       o.el.style.top = (o.y + Math.sin(a) * o.rad * 0.7) + "px";
     }
+  }
+
+  function tick(time = 0) {
+    if (!orbitOn) return;
+    positionOrbiters(time);
     animFrame = requestAnimationFrame(tick);
   }
 
@@ -404,7 +435,7 @@
       d.innerHTML = `<div class="k">${esc(k)}</div><div class="v ${cls || ""}">${v}</div>`;
       kv.appendChild(d);
     };
-    if (ex.zone_name) addKV("Zone", esc(ex.zone_name), "zone");
+    if (ex.zone_name) addKV("Zone", `<span style="color:${ex.color || ZONE_COLORS[ex.zone] || "var(--accent)"}">${esc(ex.zone_name)}</span>`, "zone");
     if (ex.role) addKV("Role", esc(ex.role));
     if (ex.ip) addKV("Resolved IP", esc(ex.ip));
     if (ex.dns && ex.dns.length) addKV("DNS (passive)", esc(ex.dns.join(", ")));
@@ -440,19 +471,19 @@
     closeBtn.onclick = () => closeDrawer();
     acts.appendChild(closeBtn);
 
-    // sibling records in the same cluster
+    // sibling records in the same cluster — ALL of them, clickable
     const list = document.getElementById("dList");
     list.innerHTML = "";
     if (activeCluster && activeCluster.recs.length > 1) {
       const h = document.createElement("div");
       h.className = "k";
       h.style.cssText = "font-size:8px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:8px";
-      h.textContent = `SECTOR RECORDS — ${fmtN(activeCluster.recs.length)} IN FOCUS`;
+      h.textContent = `SECTOR RECORDS — ${fmtN(activeCluster.recs.length)} IN FOCUS (CLICK ANY)`;
       list.appendChild(h);
-      activeCluster.recs.slice(0, 60).forEach(r => {
+      activeCluster.recs.forEach(r => {
         const row = document.createElement("div");
         row.className = "rl";
-        row.innerHTML = `<span class="c">${esc(r.title)}</span> <span style="color:var(--dim)">· ${esc(r.type)}</span>${r.extras?.http_status != null ? ` <span class="status ${statusClass(r.extras.http_status)}">${r.extras.http_status}</span>` : ""}`;
+        row.innerHTML = `<span class="c">${esc(r.title)}</span> <span style="color:var(--dim)">· ${esc(r.type)}</span>${r.extras?.http_status != null ? ` <span class="status ${statusClass(r.extras.http_status)}">${r.extras.http_status}</span>` : ""}${r.extras?.count != null ? ` <span style="color:var(--dim)">· ${fmtN(r.extras.count)} cams</span>` : ""}`;
         row.onclick = () => selectRecord(r.id);
         if (r.id === rec.id) row.style.borderColor = "var(--accent)";
         list.appendChild(row);
@@ -468,7 +499,12 @@
   }
 
   document.getElementById("drawerClose").onclick = closeDrawer;
-  addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
+  addEventListener("keydown", e => {
+    if (e.key === "Escape") {
+      if (drawer.classList.contains("open")) closeDrawer();
+      else if (focusKey) { focusKey = null; selectedId = null; drawGalaxy(); }
+    }
+  });
 
   // ---------- search ----------
   let searchTimer = null;
